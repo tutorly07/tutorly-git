@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useUser } from '@clerk/clerk-react';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 import { getUserStudyMaterials } from '@/lib/database';
 
@@ -39,7 +39,7 @@ export const useRealTimeStudyMaterials = () => {
         event: '*',
         schema: 'public',
         table: 'study_materials',
-        filter: `user_id=eq.${user.id}`
+        filter: `clerk_user_id=eq.${user.id}`
       }, (payload) => {
         fetchMaterials();
       })
@@ -67,7 +67,7 @@ export const useRealTimeStudySessions = () => {
         const { data, error } = await supabase
           .from('study_sessions')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('clerk_user_id', user.id)
           .order('started_at', { ascending: false });
 
         if (error) throw error;
@@ -93,7 +93,7 @@ export const useRealTimeStudySessions = () => {
         event: '*',
         schema: 'public',
         table: 'study_sessions',
-        filter: `user_id=eq.${user.id}`
+        filter: `clerk_user_id=eq.${user.id}`
       }, (payload) => {
         fetchSessions();
       })
@@ -121,8 +121,8 @@ export const useRealTimeUserStats = () => {
         const { data, error } = await supabase
           .from('user_stats')
           .select('*')
-          .eq('user_id', user.id)
-          .order('last_updated', { ascending: false });
+          .eq('clerk_user_id', user.id)
+          .order('last_updated', { ascending: false});
 
         if (error) throw error;
         setStats(data || []);
@@ -147,7 +147,7 @@ export const useRealTimeUserStats = () => {
         event: '*',
         schema: 'public',
         table: 'user_stats',
-        filter: `user_id=eq.${user.id}`
+        filter: `clerk_user_id=eq.${user.id}`
       }, (payload) => {
         fetchStats();
       })

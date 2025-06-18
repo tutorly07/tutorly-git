@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useUser, useSignUp, SignInButton } from "@clerk/clerk-react";
@@ -103,7 +104,7 @@ const SignUpPage = () => {
             </Alert>
           )}
 
-          <SignInButton mode="redirect" redirectUrl="/dashboard">
+          <SignInButton mode="redirect" fallbackRedirectUrl="/dashboard">
             <Button
               variant="outline"
               className="w-full bg-white text-gray-900 hover:bg-gray-100 border-gray-300"

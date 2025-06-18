@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/SupabaseAuthContext";
+import { useUser } from "@clerk/clerk-react";
 import { useToast } from "@/components/ui/use-toast";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -11,12 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, FileText, MessageCircle, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 const NotesChatPage = () => {
   const { noteId } = useParams();
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, isLoaded } = useUser();
   const { toast } = useToast();
   const [noteContent, setNoteContent] = useState("");
   const [noteTitle, setNoteTitle] = useState("");
@@ -24,7 +23,9 @@ const NotesChatPage = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!isLoaded) return;
+    
+    if (!user) {
       navigate('/signin');
       return;
     }
@@ -34,7 +35,7 @@ const NotesChatPage = () => {
     } else if (!noteId) {
       navigate('/ai-notes');
     }
-  }, [user, loading, noteId, navigate]);
+  }, [user, isLoaded, noteId, navigate]);
 
   const loadNoteContent = async () => {
     if (!user || !noteId) return;
@@ -47,7 +48,7 @@ const NotesChatPage = () => {
       let { data, error } = await supabase
         .from('study_materials')
         .select('title, file_name, metadata')
-        .eq('user_id', user.id)
+        .eq('clerk_user_id', user.id)
         .eq('id', noteId)
         .single();
 
@@ -56,7 +57,7 @@ const NotesChatPage = () => {
         const notesResult = await supabase
           .from('notes')
           .select('title, content')
-          .eq('user_id', user.id)
+          .eq('clerk_user_id', user.id)
           .eq('id', noteId)
           .single();
         
@@ -102,7 +103,7 @@ const NotesChatPage = () => {
     }
   };
 
-  if (loading || isLoading) {
+  if (!isLoaded || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-bl from-[#101010] via-[#23272e] to-[#09090b] text-white">
         <div className="text-center">

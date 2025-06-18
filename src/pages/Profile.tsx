@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useUser, useClerk } from '@clerk/clerk-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,11 +13,18 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import BottomNav from '@/components/layout/BottomNav';
 
+interface UserProfile {
+  clerk_user_id: string;
+  email: string;
+  full_name: string;
+  role: string;
+}
+
 const Profile = () => {
   const { user } = useUser();
   const { signOut } = useClerk();
   const { toast } = useToast();
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,11 +34,13 @@ const Profile = () => {
   }, [user]);
 
   const loadProfile = async () => {
+    if (!user) return;
+    
     try {
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('clerk_user_id', user?.id)
+        .eq('clerk_user_id', user.id)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -39,9 +48,9 @@ const Profile = () => {
       }
 
       setProfile(data || {
-        clerk_user_id: user?.id,
-        email: user?.primaryEmailAddress?.emailAddress,
-        full_name: user?.fullName || '',
+        clerk_user_id: user.id,
+        email: user.primaryEmailAddress?.emailAddress || '',
+        full_name: user.fullName || '',
         role: 'student'
       });
     } catch (error) {

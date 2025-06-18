@@ -6,9 +6,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageCircle, Send, Bot, User, Sparkles, X, FileText } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/contexts/SupabaseAuthContext";
+import { useUser } from "@clerk/clerk-react";
 import { ChatMessage, getChatHistory, saveChatMessage, subscribeToChatHistory } from "@/lib/notesChat";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface NotesChatProps {
@@ -29,7 +29,7 @@ const NotesChat = ({ noteId, noteContent: initialNoteContent, noteTitle: initial
   const [contextActive, setContextActive] = useState<boolean>(true);
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const { user } = useAuth();
+  const { user } = useUser();
   const { toast } = useToast();
 
   // Fetch note content and title for context, based on noteId and user
@@ -40,7 +40,7 @@ const NotesChat = ({ noteId, noteContent: initialNoteContent, noteTitle: initial
       let { data, error } = await supabase
         .from('study_materials')
         .select('title,file_name,metadata')
-        .eq('user_id', user.id)
+        .eq('clerk_user_id', user.id)
         .eq('id', noteId)
         .single();
 
@@ -58,7 +58,7 @@ const NotesChat = ({ noteId, noteContent: initialNoteContent, noteTitle: initial
         let result = await supabase
           .from('notes')
           .select('title,content')
-          .eq('user_id', user.id)
+          .eq('clerk_user_id', user.id)
           .eq('id', noteId)
           .single();
         if (result.data) {
@@ -99,7 +99,6 @@ const NotesChat = ({ noteId, noteContent: initialNoteContent, noteTitle: initial
     }
   };
 
-  // AI Chat call, always use note context as SYSTEM prompt
   const sendMessageToAI = async (userMessage: string, chatHistory: ChatMessage[]) => {
     const messages = [];
 
