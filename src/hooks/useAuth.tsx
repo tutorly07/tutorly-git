@@ -1,3 +1,3 @@
 
-// Export from the Supabase context directly
-export { useAuth } from "@/contexts/SupabaseAuthContext";
+// Export Clerk authentication hooks
+export { useUser, useClerk, useAuth } from "@clerk/clerk-react";

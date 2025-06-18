@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useUser, useClerk } from '@clerk/clerk-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -14,15 +14,11 @@ import Footer from '@/components/layout/Footer';
 import BottomNav from '@/components/layout/BottomNav';
 
 const Profile = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useUser();
+  const { signOut } = useClerk();
   const { toast } = useToast();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    full_name: '',
-    email: ''
-  });
 
   useEffect(() => {
     if (user) {
@@ -35,7 +31,7 @@ const Profile = () => {
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('id', user?.id)
+        .eq('clerk_user_id', user?.id)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -43,15 +39,10 @@ const Profile = () => {
       }
 
       setProfile(data || {
-        id: user?.id,
-        email: user?.email,
-        full_name: user?.user_metadata?.full_name || '',
+        clerk_user_id: user?.id,
+        email: user?.primaryEmailAddress?.emailAddress,
+        full_name: user?.fullName || '',
         role: 'student'
-      });
-      
-      setFormData({
-        full_name: data?.full_name || user?.user_metadata?.full_name || '',
-        email: data?.email || user?.email || ''
       });
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -62,35 +53,6 @@ const Profile = () => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    try {
-      const { error } = await supabase
-        .from('users')
-        .upsert({
-          id: user?.id,
-          ...formData,
-          updated_at: new Date().toISOString()
-        });
-
-      if (error) throw error;
-
-      setProfile({ ...profile, ...formData });
-      setEditing(false);
-      
-      toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      });
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast({
-        title: "Error",
-        description: "Could not update profile",
-        variant: "destructive",
-      });
     }
   };
 
@@ -129,15 +91,15 @@ const Profile = () => {
           <Card className="bg-white/10 backdrop-blur-lg border-white/20">
             <CardHeader className="text-center">
               <Avatar className="w-24 h-24 mx-auto mb-4">
-                <AvatarImage src={profile?.avatar_url} />
+                <AvatarImage src={user?.imageUrl} />
                 <AvatarFallback className="bg-purple-600 text-white text-2xl">
-                  {profile?.full_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
+                  {user?.fullName?.charAt(0) || user?.primaryEmailAddress?.emailAddress?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
               <CardTitle className="text-2xl text-white">
-                {profile?.full_name || 'User'}
+                {user?.fullName || 'User'}
               </CardTitle>
-              <p className="text-white/70">{profile?.email}</p>
+              <p className="text-white/70">{user?.primaryEmailAddress?.emailAddress}</p>
               <Badge variant="outline" className="text-purple-400 border-purple-400 w-fit mx-auto">
                 <Trophy className="w-4 h-4 mr-1" />
                 {profile?.role || 'Student'}
@@ -154,64 +116,20 @@ const Profile = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {editing ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-white/70 mb-1">
-                      Full Name
-                    </label>
-                    <Input
-                      value={formData.full_name}
-                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-white/70 mb-1">
-                      Email
-                    </label>
-                    <Input
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white"
-                      disabled
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button onClick={handleSave} className="bg-purple-600 hover:bg-purple-700">
-                      Save Changes
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setEditing(false)}
-                      className="border-white/20 text-white hover:bg-white/10"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
+              <div className="space-y-4">
+                <div className="flex items-center text-white/90">
+                  <User className="w-4 h-4 mr-3 text-purple-400" />
+                  <span>{user?.fullName || 'Not provided'}</span>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center text-white/90">
-                    <User className="w-4 h-4 mr-3 text-purple-400" />
-                    <span>{profile?.full_name || 'Not provided'}</span>
-                  </div>
-                  <div className="flex items-center text-white/90">
-                    <Mail className="w-4 h-4 mr-3 text-purple-400" />
-                    <span>{profile?.email}</span>
-                  </div>
-                  <div className="flex items-center text-white/90">
-                    <Calendar className="w-4 h-4 mr-3 text-purple-400" />
-                    <span>Joined {new Date(profile?.created_at || Date.now()).toLocaleDateString()}</span>
-                  </div>
-                  <Button 
-                    onClick={() => setEditing(true)}
-                    className="bg-purple-600 hover:bg-purple-700"
-                  >
-                    Edit Profile
-                  </Button>
+                <div className="flex items-center text-white/90">
+                  <Mail className="w-4 h-4 mr-3 text-purple-400" />
+                  <span>{user?.primaryEmailAddress?.emailAddress}</span>
                 </div>
-              )}
+                <div className="flex items-center text-white/90">
+                  <Calendar className="w-4 h-4 mr-3 text-purple-400" />
+                  <span>Joined {new Date(user?.createdAt || Date.now()).toLocaleDateString()}</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
 

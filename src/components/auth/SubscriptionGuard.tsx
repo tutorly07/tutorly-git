@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useUser } from '@clerk/clerk-react';
 import { useSubscription } from '@/hooks/useSubscription';
 
 interface SubscriptionGuardProps {
@@ -9,14 +9,14 @@ interface SubscriptionGuardProps {
 }
 
 const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, isLoaded } = useUser();
   const { hasActiveSubscription, loading: subLoading } = useSubscription();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     // Don't redirect while loading
-    if (authLoading || subLoading) return;
+    if (!isLoaded || subLoading) return;
 
     // If not authenticated, redirect to sign in
     if (!user) {
@@ -36,10 +36,10 @@ const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
         return;
       }
     }
-  }, [user, hasActiveSubscription, authLoading, subLoading, navigate, location.pathname]);
+  }, [user, hasActiveSubscription, isLoaded, subLoading, navigate, location.pathname]);
 
   // Show loading while checking auth and subscription
-  if (authLoading || subLoading) {
+  if (!isLoaded || subLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800 text-white">
         <div className="text-center">

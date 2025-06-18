@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useClerk } from "@clerk/clerk-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
@@ -20,7 +20,8 @@ import {
 import { toast } from "sonner";
 
 const SettingsPage = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useUser();
+  const { signOut } = useClerk();
   const { subscription, loading } = useSubscription();
   const navigate = useNavigate();
 
@@ -90,7 +91,11 @@ const SettingsPage = () => {
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</label>
-                <p className="text-lg text-gray-900 dark:text-white">{user?.email}</p>
+                <p className="text-lg text-gray-900 dark:text-white">{user?.primaryEmailAddress?.emailAddress}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Name</label>
+                <p className="text-lg text-gray-900 dark:text-white">{user?.fullName || 'Not provided'}</p>
               </div>
               <Button
                 variant="outline"

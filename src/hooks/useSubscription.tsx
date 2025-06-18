@@ -1,106 +1,58 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useUser } from '@clerk/clerk-react';
+import { supabase } from '@/lib/supabase';
 
 interface Subscription {
   id: string;
   plan_name: string;
   status: string;
+  is_trial: boolean;
   trial_end_date: string | null;
   subscription_end_date: string | null;
-  is_trial: boolean;
 }
 
 export const useSubscription = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, isLoaded } = useUser();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
 
   useEffect(() => {
-    if (authLoading) return;
-    
-    if (!user) {
-      setSubscription(null);
-      setHasActiveSubscription(false);
+    if (isLoaded && user) {
+      fetchSubscription();
+    } else if (isLoaded && !user) {
       setLoading(false);
-      return;
     }
-
-    fetchSubscription();
-  }, [user, authLoading]);
+  }, [user, isLoaded]);
 
   const fetchSubscription = async () => {
-    if (!user) return;
-
     try {
-      setLoading(true);
-      
-      // Check if user has active subscription
-      const { data: hasActive, error: hasActiveError } = await supabase
-        .rpc('has_active_subscription', { p_user_id: user.id });
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('clerk_user_id', user!.id)
+        .eq('status', 'active')
+        .single();
 
-      if (hasActiveError) {
-        console.error('Error checking subscription status:', hasActiveError);
-        setHasActiveSubscription(false);
-      } else {
-        setHasActiveSubscription(hasActive || false);
+      if (error && error.code !== 'PGRST116') {
+        throw error;
       }
 
-      // Get subscription details
-      const { data: subData, error: subError } = await supabase
-        .rpc('get_user_subscription', { p_user_id: user.id });
-
-      if (subError) {
-        console.error('Error fetching subscription:', subError);
-        setSubscription(null);
-      } else if (subData && subData.length > 0) {
-        setSubscription(subData[0]);
-      } else {
-        setSubscription(null);
-      }
+      setSubscription(data);
+      setHasActiveSubscription(!!data);
     } catch (error) {
-      console.error('Error in fetchSubscription:', error);
+      console.error('Error fetching subscription:', error);
       setHasActiveSubscription(false);
-      setSubscription(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const createTrialSubscription = async (planName: string) => {
-    if (!user) return false;
-
-    try {
-      const { error } = await supabase
-        .from('subscriptions')
-        .insert([{
-          user_id: user.id,
-          plan_name: planName,
-          status: 'trialing',
-          trial_start_date: new Date().toISOString(),
-          trial_end_date: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString()
-        }]);
-
-      if (error) {
-        console.error('Error creating trial subscription:', error);
-        return false;
-      }
-
-      await fetchSubscription();
-      return true;
-    } catch (error) {
-      console.error('Error creating trial subscription:', error);
-      return false;
-    }
-  };
-
   return {
     subscription,
+    loading,
     hasActiveSubscription,
-    loading: loading || authLoading,
-    fetchSubscription,
-    createTrialSubscription
+    refetch: fetchSubscription
   };
 };
