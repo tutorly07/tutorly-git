@@ -70,9 +70,44 @@ export const useStudyTracking = () => {
     }
   };
 
+  // Add missing methods that other components expect
+  const startSession = async () => {
+    await trackActivity('session_started');
+  };
+
+  const endSession = async () => {
+    await trackActivity('session_ended');
+  };
+
+  const trackNotesCreation = async () => {
+    await trackActivity('notes_created');
+    await fetchStats(); // Refresh stats
+  };
+
+  const trackSummaryGeneration = async () => {
+    await trackActivity('summary_generated');
+    await fetchStats(); // Refresh stats
+  };
+
+  const trackQuizCompletion = async () => {
+    await trackActivity('quiz_completed');
+    await fetchStats(); // Refresh stats
+  };
+
+  const trackMathProblemSolved = async () => {
+    await trackActivity('math_problem_solved');
+    await fetchStats(); // Refresh stats
+  };
+
   return {
     stats,
     trackActivity,
-    refetchStats: fetchStats
+    refetchStats: fetchStats,
+    startSession,
+    endSession,
+    trackNotesCreation,
+    trackSummaryGeneration,
+    trackQuizCompletion,
+    trackMathProblemSolved
   };
 };

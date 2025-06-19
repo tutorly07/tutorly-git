@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Share, CreditCard, MessageCircle, User, ChevronDown } from 'lucide-react';
@@ -21,11 +20,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useUser } from '@clerk/clerk-react';
 
 const ChatHeader: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useUser();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const handleShare = () => {

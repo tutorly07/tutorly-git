@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import Navbar from "@/components/layout/Navbar";
@@ -7,7 +6,7 @@ import BottomNav from "@/components/layout/BottomNav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { useAuth } from "@/contexts/SupabaseAuthContext";
+import { useUser } from "@clerk/clerk-react";
 import { getUserStudyPlans } from "@/lib/database";
 
 interface StudyPlan {
@@ -19,7 +18,7 @@ interface StudyPlan {
 }
 
 const StudyPlans = () => {
-  const { user } = useAuth();
+  const { user } = useUser();
   const { toast } = useToast();
   
   const [plans, setPlans] = useState<StudyPlan[]>([]);
